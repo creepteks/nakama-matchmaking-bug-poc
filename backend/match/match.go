@@ -24,13 +24,15 @@ func Register(initializer runtime.Initializer) error {
 }
 
 func doMatchmaking(ctx context.Context, logger runtime.Logger, db *sql.DB, nk runtime.NakamaModule, entries []runtime.MatchmakerEntry) (string, error) {
+	presences := make([]runtime.Presence, 0)
 	for _, e := range entries {
 		for k, v := range e.GetProperties() {
 			logger.Info("Matched on '%s' value '%v'", k, v)
 		}
+		presences = append(presences, e.GetPresence())
 	}
 
-	matchId, err := nk.MatchCreate(ctx, "testMatch", map[string]interface{}{"joins": entries, "debug": true, "debug-verbose": false})
+	matchId, err := nk.MatchCreate(ctx, "testMatch", map[string]interface{}{"joins": presences, "debug": true, "debug-verbose": false})
 	if err != nil {
 		return "", err
 	}
@@ -46,10 +48,9 @@ func createMatch(ctx context.Context, logger runtime.Logger, db *sql.DB, nk runt
 
 // MatchInit is called once when the match is created
 func (m *Match) MatchInit(ctx context.Context, logger runtime.Logger, db *sql.DB, nk runtime.NakamaModule, params map[string]interface{}) (interface{}, int, string) {
-
-	entries := params["joins"].([]runtime.MatchmakerEntry)
+	entries := params["joins"].([]runtime.Presence)
 	for _, p := range entries {
-		logger.Info(p.GetPresence().GetUsername())
+		logger.Info(p.GetUsername())
 	}
 
 	state := &Match{}
